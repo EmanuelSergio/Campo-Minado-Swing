@@ -6,6 +6,8 @@ import java.util.List;
 
 public class Campo {
 
+	
+	
 	private final int linha; 
 	private final int coluna;
 	
@@ -14,6 +16,7 @@ public class Campo {
 	private boolean marcado;
 	
 	private List<Campo> vizinhos = new ArrayList<Campo>();
+	private List<CampoObservador> observadores = new ArrayList<CampoObservador>();
 	
 	
 	public Campo(int linha, int coluna) {
@@ -21,6 +24,15 @@ public class Campo {
 		this.linha = linha;
 		this.coluna = coluna;
 	}
+	
+	public void registrarObservador(CampoObservador observador) {
+		observadores.add(observador);
+	}
+	
+	private void notificarObservadores(CampoEvento evento) {
+		observadores.stream().forEach(o -> o.eventoOcorreu(this, evento));
+	}
+	
 	
 	boolean adicionarVizinho(Campo candidatoVizinho) {
 		boolean linhaDiferente = linha != candidatoVizinho.linha;
@@ -46,17 +58,24 @@ public class Campo {
 	void alternarMarcacao() {
 		if(!aberto) {
 			marcado = !marcado;
+			
+			if(marcado) {
+				notificarObservadores(CampoEvento.MARCAR);
+			}else {
+				notificarObservadores(CampoEvento.DESMARCAR);
+			}
 		}
 	}
 	
 	boolean abrir () {
 		
 		if(!aberto && !marcado) {
-			aberto = true;
-		
-		if(minado) {
-			//TODO Implementar nova versao
+			if(minado) {
+			notificarObservadores(CampoEvento.EXPLODIR);
+			return true;
 		}
+		
+		setAberto(true);	
 		
 		if(vizinhancaSegura()) {
 			vizinhos.forEach(v -> v.abrir());
@@ -89,7 +108,12 @@ public class Campo {
 
 	 void setAberto(boolean aberto) {
 		this.aberto = aberto;
+		if(aberto) {
+			notificarObservadores(CampoEvento.ABRIR);
+		}
+		
 	}
+	 
 
 	public boolean isAberto() {
 		return aberto;
